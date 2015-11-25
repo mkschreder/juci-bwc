@@ -1,7 +1,7 @@
 all: luci-bwc
 
 luci-bwc: luci-bwc.c
-	$(CC) -o $@ $^
+	$(CC) -o $@ $^ -ldl
 
 clean: 
 	rm -f luci-bwc
