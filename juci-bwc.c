@@ -582,6 +582,8 @@ static void check_daemon(void)
 
 			exit(1);
 		}
+		// sleep for a while to let the daemon start up so it can create the db files
+		sleep(2); 
 	}
 	else if (kill(pid, SIGUSR1))
 	{
@@ -606,7 +608,7 @@ static int run_dump_ifname(const char *ifname)
 		return 1;
 	}
 
-	long prxb = 0, ptxb = 0; 
+	long prxb = -1, ptxb = -1; 
 	for (i = 0; i < m.size; i += sizeof(struct traffic_entry))
 	{
 		e = (struct traffic_entry *) &m.mmap[i];
@@ -617,15 +619,15 @@ static int run_dump_ifname(const char *ifname)
 		long rxb = ntohl(e->rxb); 
 		long txb = ntohl(e->txb); 
 
-		long drxb = rxb - prxb; 
-		long dtxb = txb - ptxb; 
+		long drxb = (prxb != -1)?(rxb - prxb):0; 
+		long dtxb = (ptxb != -1)?(txb - ptxb):0; 
 			
 		prxb = rxb; 
 		ptxb = txb; 
 
 		printf("[ %u, %u, %u, %u, %u, %u, %u ]%s\n",
 			ntohl(e->time),
-			rxb, drxb, txb, dtxb, 
+			rxb, txb, drxb, dtxb, 
 			ntohl(e->rxp), ntohl(e->txp),
 			((i + sizeof(struct traffic_entry)) < m.size) ? "," : "");
 	}
