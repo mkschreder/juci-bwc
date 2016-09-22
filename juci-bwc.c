@@ -1,7 +1,10 @@
 /*
- * luci-bwc - Very simple bandwidth collector cache for LuCI realtime graphs
+ * juci-bwc - Very simple bandwidth collector cache for JuCI realtime graphs
+ * 
+ * ( largely based on luci-bwc with a few minor adjustments ) 
  *
  *   Copyright (C) 2010 Jo-Philipp Wich <jow@openwrt.org>
+ *   Copyright (C) 2016 Martin Schröder <mkschreder.uk@gmail.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,12 +38,12 @@
 #include <iwinfo.h>
 
 #define STEP_COUNT	60
-#define STEP_TIME	1
+#define STEP_TIME	60
 #define TIMEOUT		10
 
-#define PID_PATH	"/var/run/luci-bwc.pid"
+#define PID_PATH	"/var/run/juci-bwc.pid"
 
-#define DB_PATH		"/var/lib/luci-bwc"
+#define DB_PATH		"/var/lib/juci-bwc"
 #define DB_IF_FILE	DB_PATH "/if/%s"
 #define DB_RD_FILE	DB_PATH "/radio/%s"
 #define DB_CN_FILE	DB_PATH "/connections"
@@ -471,7 +474,7 @@ static int run_daemon(void)
 	{
 		/* alter progname for ps, top */
 		memset(progname, 0, prognamelen);
-		snprintf(progname, prognamelen, "luci-bwc %d", countdown);
+		snprintf(progname, prognamelen, "juci-bwc %d", countdown);
 
 		if ((info = fopen("/proc/net/dev", "r")) != NULL)
 		{
@@ -603,6 +606,7 @@ static int run_dump_ifname(const char *ifname)
 		return 1;
 	}
 
+	long prxb = 0, ptxb = 0; 
 	for (i = 0; i < m.size; i += sizeof(struct traffic_entry))
 	{
 		e = (struct traffic_entry *) &m.mmap[i];
@@ -610,11 +614,19 @@ static int run_dump_ifname(const char *ifname)
 		if (!e->time)
 			continue;
 
-		printf("[ %u, %u, %" PRIu32
-			   ", %u, %u ]%s\n",
+		long rxb = ntohl(e->rxb); 
+		long txb = ntohl(e->txb); 
+
+		long drxb = rxb - prxb; 
+		long dtxb = txb - ptxb; 
+			
+		prxb = rxb; 
+		ptxb = txb; 
+
+		printf("[ %u, %u, %u, %u, %u, %u, %u ]%s\n",
 			ntohl(e->time),
-			ntohl(e->rxb), ntohl(e->rxp),
-			ntohl(e->txb), ntohl(e->txp),
+			rxb, drxb, txb, dtxb, 
+			ntohl(e->rxp), ntohl(e->txp),
 			((i + sizeof(struct traffic_entry)) < m.size) ? "," : "");
 	}
 

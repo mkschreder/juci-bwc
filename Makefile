@@ -1,7 +1,7 @@
-all: luci-bwc
+all: juci-bwc
 
-luci-bwc: luci-bwc.c
+juci-bwc: juci-bwc.c
 	$(CC) $(CFLAGS) -o $@ $^ -ldl
 
 clean: 
-	rm -f luci-bwc
+	rm -f juci-bwc
